@@ -1,71 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>brainblitZ</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap');
-
         body {
             font-family: 'Nunito', sans-serif;
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            background-color: #f8fafc;
             color: #334155;
-            user-select: none;
-        }
-
-        .card {
-            @apply bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 mb-6 cursor-pointer;
-        }
-
-        .grid-container {
-            @apply grid grid-cols-1 md:grid-cols-2 gap-6;
-        }
-
-        .hero {
-            @apply text-center py-10 px-6 bg-gradient-to-r from-purple-600 to-indigo-700 text-white rounded-lg mb-8;
         }
     </style>
 </head>
-<body class="p-6">
-    <div class="hero">
-        <h1 class="text-5xl font-bold mb-2">brainblitZ</h1>
-        <p class="text-xl">Boost your mind with quick, fun games.</p>
-    </div>
-
-    <div id="gameCards" class="grid-container"></div>
+<body class="p-4">
+    <h1 class="text-3xl font-bold text-center mb-8 text-slate-700">brainblitZ</h1>
+    <div id="gamesContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
 
     <script>
         const games = [
-            { name: "Visual Counter", icon: "fa-eye", path: "games/viscount.html" },
-            { name: "Blitz Maths", icon: "fa-calculator", path: "games/bmaths.html" },
-            { name: "Memory Matrix", icon: "fa-puzzle-piece", path: "#", status: "coming soon" },
-            { name: "Word Blitz", icon: "fa-brain", path: "#", status: "coming soon" }
+            { name: "Visual Trainer", description: "Sharpen your focus and counting skills.", url: "games/viscount.html" },
+            { name: "Game 2", description: "Description for Game 2.", url: "#" },
+            { name: "Game 3", description: "Description for Game 3.", url: "#" },
+            { name: "Game 4", description: "Description for Game 4.", url: "#" }
+            // Add more games as needed
         ];
 
-        const container = document.getElementById("gameCards");
+        const gamesContainer = document.getElementById('gamesContainer');
+
         games.forEach(game => {
-            const card = document.createElement("a");
-            card.className = "card block";
-            card.href = game.path;
-            card.target = "_self"; // Load in same window
-
-            if (game.status === "coming soon") {
-                card.href = "#";
-                card.classList.add("opacity-50", "cursor-not-allowed");
-            }
-
+            const card = document.createElement('div');
+            card.className = 'bg-white rounded-xl shadow-md p-5 border border-slate-200 flex flex-col transition-all hover:shadow-lg';
             card.innerHTML = `
-                <div class="flex justify-center text-6xl text-purple-600 mb-4">
-                    <i class="fas ${game.icon}"></i>
-                </div>
-                <h2 class="text-2xl font-bold text-center mb-2">${game.name}</h2>
-                <p class="text-center text-gray-600">${game.status === "coming soon" ? "Coming soon..." : game.description || ""}</p>
+                <h3 class="font-bold text-lg text-slate-700 mb-2">${game.name}</h3>
+                <p class="text-slate-500 text-sm mb-4">${game.description}</p>
+                <a href="${game.url}" class="mt-auto px-4 py-2 bg-indigo-600 text-white rounded-lg text-center hover:bg-indigo-700 font-semibold">Play</a>
             `;
-
-            container.appendChild(card);
+            gamesContainer.appendChild(card);
         });
     </script>
 </body>
