@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Visual Counting Trainer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+            user-select: none;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        /* Animations */
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .scale-in { animation: scaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Game Symbols */
+        .game-symbol {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease;
+            pointer-events: none;
+        }
+
+        .shape-circle { border-radius: 50%; }
+        .shape-square { border-radius: 6px; }
+        .shape-triangle {
+            width: 0; height: 0;
+            background-color: transparent !important;
+            border-left: solid transparent;
+            border-right: solid transparent;
+            border-bottom: solid;
+        }
+
+        /* Utilities */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+    </style>
+</head>
+<body class="h-screen w-screen flex items-center justify-center p-2 sm:p-4 bg-slate-50">
+
+    <!-- App Container -->
+    <div id="app-container" class="w-full max-w-4xl h-full max-h-[800px] bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col relative border border-slate-200">
+        
+        <!-- Header -->
+        <header class="bg-white p-4 flex justify-between items-center border-b border-slate-100 z-30 shadow-sm h-16 shrink-0 relative">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600 shadow-sm">
+                    <i class="fas fa-eye"></i>
+                </div>
+                <h1 class="font-bold text-lg text-slate-700 tracking-tight">Visual Trainer</h1>
+            </div>
+            <button id="btn-home" onclick="UI.showMenu()" class="hidden px-4 py-1.5 text-sm font-bold text-slate-500 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer">
+                Exit
+            </button>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 relative overflow-hidden bg-slate-50/50">
+            
+            <!-- VIEW: MENU -->
+            <div id="view-menu" class="absolute inset-0 p-6 flex flex-col items-center justify-center overflow-y-auto z-10">
+                <div class="text-center mb-8 fade-in">
+                    <h2 class="text-3xl font-extrabold text-slate-800 mb-2">Sharpen Your Focus</h2>
+                    <p class="text-slate-500 font-medium">Select a training mode</p>
+                </div>
+
+                <div class="grid w-full max-w-md gap-4 fade-in" style="animation-delay: 0.1s">
+                    <button onclick="Game.setupMode('casual')" class="flex items-center p-5 bg-white hover:bg-indigo-50 border-2 border-slate-100 hover:border-indigo-200 rounded-2xl transition-all shadow-sm hover:shadow-md group active:scale-95">
+                        <div class="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl mr-4 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-coffee"></i>
+                        </div>
+                        <div class="text-left flex-1">
+                            <h3 class="font-bold text-lg text-slate-700">Casual Mode</h3>
+                            <p class="text-sm text-slate-500 font-medium">Unpredictable counts. Relaxed pace.</p>
+                        </div>
+                    </button>
+
+                    <button onclick="Game.setupMode('arcade')" class="flex items-center p-5 bg-white hover:bg-rose-50 border-2 border-slate-100 hover:border-rose-200 rounded-2xl transition-all shadow-sm hover:shadow-md group active:scale-95">
+                        <div class="w-12 h-12 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center text-xl mr-4 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <div class="text-left flex-1">
+                            <div class="flex justify-between items-center">
+                                <h3 class="font-bold text-lg text-slate-700">Arcade Mode</h3>
+                                <span class="text-xs font-bold bg-rose-100 text-rose-600 px-2.5 py-1 rounded-full">Best: <span id="menu-arcade-best">0</span></span>
+                            </div>
+                            <p class="text-sm text-slate-500 font-medium">Harder & faster. One mistake.</p>
+                        </div>
+                    </button>
+
+                    <button onclick="Game.setupMode('training')" class="flex items-center p-5 bg-white hover:bg-emerald-50 border-2 border-slate-100 hover:border-emerald-200 rounded-2xl transition-all shadow-sm hover:shadow-md group active:scale-95">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl mr-4 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-dumbbell"></i>
+                        </div>
+                        <div class="text-left flex-1">
+                            <h3 class="font-bold text-lg text-slate-700">Training Mode</h3>
+                            <p class="text-sm text-slate-500 font-medium">No timer. Practice freely.</p>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- VIEW: SETTINGS -->
+            <div id="view-settings" class="hidden absolute inset-0 p-6 flex flex-col items-center justify-center z-40 bg-white/60 backdrop-blur-md">
+                <div class="bg-white p-8 rounded-3xl shadow-2xl border border-slate-100 w-full max-w-sm text-center scale-in">
+                    <h3 class="text-2xl font-bold mb-8 text-slate-800" id="settings-title">Configure</h3>
+                    
+                    <div id="settings-casual" class="hidden text-left mb-8">
+                        <label class="flex justify-between text-sm font-bold text-slate-600 mb-4">
+                            <span>Number of Turns</span>
+                            <span id="turn-display" class="text-indigo-600 text-lg">5</span>
+                        </label>
+                        <input type="range" min="3" max="20" value="5" class="w-full h-3 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-500 hover:accent-indigo-600" 
+                               oninput="document.getElementById('turn-display').innerText = this.value; Game.config.maxTurns = parseInt(this.value)">
+                    </div>
+
+                    <div id="settings-training" class="hidden text-left mb-8">
+                        <label class="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
+                            <span class="text-slate-700 font-bold">Allow Retries</span>
+                            <div class="relative inline-block w-12 h-6 transition duration-200 ease-in-out">
+                                <input type="checkbox" id="retry-check" class="peer absolute w-0 h-0 opacity-0" onchange="Game.config.allowRetry = this.checked">
+                                <span class="block w-12 h-6 bg-slate-300 rounded-full shadow-inner peer-checked:bg-emerald-500 transition-colors"></span>
+                                <span class="absolute block w-4 h-4 mt-1 ml-1 bg-white rounded-full shadow transform transition-transform peer-checked:translate-x-6"></span>
+                            </div>
+                        </label>
+                        <p class="text-xs text-slate-400 mt-2 px-1">Retries will lower your accuracy score.</p>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button onclick="UI.showMenu()" class="flex-1 py-3.5 bg-white border-2 border-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-xl font-bold transition-colors">Back</button>
+                        <button onclick="Game.start()" class="flex-[2] py-3.5 bg-slate-800 text-white rounded-xl font-bold hover:bg-slate-700 shadow-lg hover:shadow-xl transform active:scale-95 transition-all">Start Game</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: GAME -->
+            <div id="view-game" class="hidden absolute inset-0 flex flex-col z-20">
+                <!-- HUD -->
+                <div class="h-16 flex justify-between items-center px-6 bg-white border-b border-slate-100 shrink-0 shadow-sm relative z-20">
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Turn</span>
+                        <span id="hud-turn" class="text-xl font-black text-slate-800 leading-none">1</span>
+                    </div>
+                    
+                    <!-- Timer Bar -->
+                    <div id="timer-container" class="hidden flex-1 mx-6 h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div id="timer-bar" class="h-full bg-indigo-500 rounded-full w-full"></div>
+                    </div>
+
+                    <div class="flex flex-col text-right">
+                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Score</span>
+                        <span id="hud-score" class="text-xl font-black text-slate-800 leading-none">0</span>
+                    </div>
+                </div>
+
+                <!-- Game Board -->
+                <div id="game-board" class="flex-1 relative bg-slate-50 m-2 sm:m-4 rounded-2xl border-2 border-slate-200 overflow-hidden shadow-inner cursor-crosshair touch-none z-10">
+                    <div id="symbol-layer" class="absolute inset-0 z-10"></div>
+                    
+                    <div id="mask-layer" class="hidden absolute inset-0 z-20 bg-slate-50 flex items-center justify-center">
+                        <div class="text-center animate-bounce">
+                            <i class="fas fa-question text-6xl sm:text-8xl text-indigo-200 filter drop-shadow-sm"></i>
+                            <p class="text-slate-400 mt-4 font-bold text-lg">How many shapes?</p>
+                        </div>
+                    </div>
+
+                    <div id="feedback-overlay" class="hidden absolute inset-0 z-30 flex items-center justify-center bg-white/90 backdrop-blur-md transition-all">
+                        <div id="feedback-content" class="text-center transform scale-0 transition-transform duration-300">
+                            <div id="feedback-icon" class="text-7xl mb-4 filter drop-shadow-md"></div>
+                            <div id="feedback-text" class="text-3xl font-black tracking-tight"></div>
+                            <div id="feedback-sub" class="text-slate-500 font-bold mt-2 text-lg"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="h-auto min-h-[100px] bg-white border-t border-slate-200 flex items-center justify-center p-4 shrink-0 z-30 pb-6 sm:pb-4">
+                    <!-- Input Area -->
+                    <div id="controls-input" class="hidden w-full max-w-sm flex gap-3">
+                        <input type="number" id="answer-input" placeholder="#" pattern="\d*" inputmode="numeric" class="w-24 bg-slate-100 text-center text-3xl font-black p-3 rounded-2xl border-2 border-slate-200 focus:border-indigo-500 focus:bg-white outline-none transition-colors text-slate-700"
+                               onkeydown="if(event.key === 'Enter') Game.submitAnswer()">
+                        <button onclick="Game.submitAnswer()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-lg rounded-2xl shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
+                            <span>SUBMIT</span> <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+
+                    <!-- Training Controls -->
+                    <div id="controls-training" class="hidden w-full max-w-sm flex gap-3">
+                        <input type="number" id="training-input" placeholder="#" pattern="\d*" inputmode="numeric" class="w-24 bg-slate-100 text-center text-3xl font-black p-3 rounded-2xl border-2 border-slate-200 focus:border-emerald-500 outline-none text-slate-700"
+                               onkeydown="if(event.key === 'Enter') Game.submitAnswer()">
+                        <button onclick="Game.submitAnswer()" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-2xl shadow-md">Check</button>
+                        <button onclick="Game.endGame()" class="px-5 text-rose-500 font-bold border-2 border-rose-100 rounded-2xl hover:bg-rose-50 hover:border-rose-200">End</button>
+                    </div>
+                    
+                    <div id="controls-wait" class="flex flex-col items-center justify-center text-slate-400 font-bold animate-pulse">
+                        <i class="fas fa-eye mb-2 text-2xl"></i>
+                        <span>Watch carefully...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: RESULTS -->
+            <!-- Fixed z-index to 50 and removed potential overlays -->
+            <div id="view-results" class="hidden absolute inset-0 bg-white/95 backdrop-blur-xl p-6 flex flex-col items-center justify-center z-50 overflow-y-auto">
+                <div id="res-icon" class="text-7xl mb-6 filter drop-shadow-lg transform hover:scale-110 transition-transform duration-300"></div>
+                <h2 class="text-3xl font-black text-slate-800 mb-1">Session Complete</h2>
+                <p id="res-subtitle" class="text-slate-500 font-semibold mb-8">Good mental workout!</p>
+                
+                <div class="grid grid-cols-2 gap-4 w-full max-w-sm mb-8">
+                    <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 text-center shadow-sm">
+                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Score</div>
+                        <div id="res-val-score" class="text-3xl font-black text-indigo-600">-</div>
+                    </div>
+                    
+                    <!-- Accuracy (Hidden for Arcade) -->
+                    <div id="res-box-acc" class="bg-slate-50 p-5 rounded-2xl border border-slate-200 text-center shadow-sm">
+                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Accuracy</div>
+                        <div id="res-val-acc" class="text-3xl font-black text-slate-700">-</div>
+                    </div>
+                    
+                    <!-- Arcade Best (Only for Arcade) -->
+                    <div id="res-box-best" class="hidden bg-rose-50 p-5 rounded-2xl border border-rose-100 text-center shadow-sm">
+                        <div class="text-[10px] font-black text-rose-400 uppercase tracking-widest mb-1">High Score</div>
+                        <div id="res-val-best" class="text-3xl font-black text-rose-600">-</div>
+                    </div>
+
+                    <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 text-center shadow-sm">
+                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Rounds</div>
+                        <div id="res-val-rounds" class="text-3xl font-black text-slate-700">-</div>
+                    </div>
+                    <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 text-center shadow-sm">
+                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Avg Time</div>
+                        <div id="res-val-time" class="text-3xl font-black text-slate-700">-</div>
+                    </div>
+                </div>
+
+                <div class="flex gap-4 w-full max-w-sm z-50">
+                    <button id="res-btn-menu" class="flex-1 py-4 border-2 border-slate-200 font-bold text-slate-600 rounded-2xl hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer">Menu</button>
+                    <button id="res-btn-again" class="flex-[1.5] py-4 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 shadow-xl hover:shadow-2xl active:scale-95 transition-all cursor-pointer">Play Again</button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // --- Utilities ---
+        const rInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+        const Game = {
+            mode: null,
+            active: false,
+            turn: 1,
+            score: 0,
+            symbolCount: 0,
+            startTime: 0,
+            turnAttempts: 0, // NEW: Track attempts per turn
+            totalAttempts: 0, // NEW: Track total session attempts
+            timerId: null,
+            history: [],
+            config: { maxTurns: 5, allowRetry: false },
+
+            init() {
+                this.updateHighScores();
+                // Bind buttons manually to ensure they work
+                document.getElementById('res-btn-menu').onclick = () => UI.showMenu();
+                document.getElementById('res-btn-again').onclick = () => Game.restart();
+                UI.showMenu();
+            },
+
+            updateHighScores() {
+                const best = localStorage.getItem('vt_arcade_best') || '0';
+                document.getElementById('menu-arcade-best').innerText = best;
+                document.getElementById('res-val-best').innerText = best;
+            },
+
+            saveHighScore() {
+                if (this.mode === 'arcade') {
+                    const currentBest = parseInt(localStorage.getItem('vt_arcade_best') || '0');
+                    if (this.score > currentBest) {
+                        localStorage.setItem('vt_arcade_best', this.score);
+                        this.updateHighScores();
+                    }
+                }
+            },
+
+            setupMode(mode) {
+                this.mode = mode;
+                this.config.maxTurns = 5;
+                if (mode === 'arcade') this.start();
+                else UI.showSettings(mode);
+            },
+
+            start() {
+                this.active = true;
+                this.turn = 1;
+                this.score = 0;
+                this.history = [];
+                this.totalAttempts = 0;
+                UI.showGame();
+                
+                requestAnimationFrame(() => {
+                    setTimeout(() => this.nextTurn(), 200);
+                });
+            },
+
+            restart() {
+                if(this.mode === 'casual') {
+                    // Preserve turn count slider value
+                    const sliderVal = document.getElementById('turn-display').innerText;
+                    this.config.maxTurns = parseInt(sliderVal);
+                }
+                this.start();
+            },
+
+            nextTurn() {
+                if (!this.active) return;
+
+                if (this.mode === 'casual' && this.turn > this.config.maxTurns) {
+                    this.endGame();
+                    return;
+                }
+
+                UI.resetTurn();
+                this.turnAttempts = 0; // Reset attempts for this new turn
+                
+                let count, size, time;
+
+                if (this.mode === 'casual') {
+                    const min = 3 + Math.floor(this.turn * 0.5);
+                    const max = 4 + this.turn;
+                    count = rInt(min, max);
+                    size = Math.max(24, 42 - (this.turn * 1.5)); 
+                    time = 3000;
+                } 
+                else if (this.mode === 'arcade') {
+                    const base = 3 + Math.floor(this.turn * 0.7);
+                    const noise = rInt(0, 3);
+                    count = base + noise;
+                    size = Math.max(16, 36 * Math.pow(0.96, this.turn));
+                    time = Math.max(900, 4000 * Math.pow(0.92, this.turn - 1));
+                } 
+                else { // Training
+                    const range = 2 + Math.ceil(this.turn / 2);
+                    const base = 2 + this.turn;
+                    count = rInt(base, base + range);
+                    size = 32;
+                    time = null;
+                }
+                
+                this.symbolCount = count;
+                this.renderSymbols(count, size);
+                UI.updateHUD(this.turn, this.score);
+
+                this.startTime = Date.now();
+
+                if (time) {
+                    UI.startTimerBar(time);
+                    this.timerId = setTimeout(() => UI.startInputPhase(), time);
+                } else {
+                    UI.showTrainingInput();
+                }
+            },
+
+            renderSymbols(count, size) {
+                const container = document.getElementById('symbol-layer');
+                container.innerHTML = '';
+                
+                let w = container.offsetWidth || container.clientWidth;
+                let h = container.offsetHeight || container.clientHeight;
+                if (w === 0) { w = 800; h = 600; } // fallback
+
+                const padding = size + 24;
+                const safeW = w - padding * 2;
+                const safeH = h - padding * 2;
+                
+                const shapes = ['shape-circle', 'shape-square', 'shape-triangle'];
+                const colors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#3b82f6', '#8b5cf6'];
+                const mixedColors = (this.mode === 'arcade' && this.turn > 5 && Math.random() > 0.7);
+                const turnShape = shapes[Math.floor(Math.random() * shapes.length)];
+                const turnColor = colors[Math.floor(Math.random() * colors.length)];
+                const positions = [];
+
+                for (let i = 0; i < count; i++) {
+                    let x, y, overlap, tries = 0;
+                    do {
+                        overlap = false;
+                        x = Math.random() * safeW + padding;
+                        y = Math.random() * safeH + padding;
+                        for(let p of positions) {
+                            if (Math.sqrt((p.x-x)**2 + (p.y-y)**2) < size * 1.4) overlap = true;
+                        }
+                        tries++;
+                    } while (overlap && tries < 150);
+
+                    positions.push({x, y});
+
+                    const el = document.createElement('div');
+                    el.className = `game-symbol ${turnShape}`;
+                    el.style.width = `${size}px`;
+                    el.style.height = `${size}px`;
+                    el.style.left = `${x}px`;
+                    el.style.top = `${y}px`;
+                    
+                    const elColor = mixedColors ? colors[Math.floor(Math.random() * colors.length)] : turnColor;
+                    el.style.backgroundColor = elColor;
+                    
+                    if (turnShape === 'shape-triangle') {
+                        el.style.backgroundColor = 'transparent';
+                        el.style.borderLeftWidth = `${size/2}px`;
+                        el.style.borderRightWidth = `${size/2}px`;
+                        el.style.borderBottomWidth = `${size}px`;
+                        el.style.borderBottomColor = elColor;
+                        el.style.width = '0'; el.style.height = '0';
+                    }
+                    el.style.transform = `translate(-50%, -50%) rotate(${Math.random() * 360}deg)`;
+                    container.appendChild(el);
+                }
+            },
+
+            submitAnswer() {
+                const inputId = (this.mode === 'training') ? 'training-input' : 'answer-input';
+                const el = document.getElementById(inputId);
+                if(el.value === '') return;
+                
+                const val = parseInt(el.value);
+                const correct = val === this.symbolCount;
+                const time = Date.now() - this.startTime;
+
+                // Track attempt
+                this.turnAttempts++;
+                this.totalAttempts++;
+
+                if (this.mode === 'training') {
+                    if(correct) {
+                        this.handleCorrect(time);
+                    } else {
+                        UI.showFeedback(false, "Try Again", "");
+                        if (!this.config.allowRetry) {
+                            setTimeout(() => {
+                                this.history.push({correct: false, time, attempts: 1});
+                                this.turn++;
+                                this.nextTurn();
+                            }, 1000);
+                        } else {
+                            // Retry enabled: user stays on turn
+                            el.value = '';
+                            el.focus();
+                        }
+                    }
+                } else if (this.mode === 'arcade') {
+                    if (correct) {
+                        this.handleCorrect(time);
+                    } else {
+                        // Game Over logic
+                        UI.showFeedback(false, "Game Over", `It was ${this.symbolCount}`);
+                        this.saveHighScore(); // Save immediately
+                        setTimeout(() => this.endGame(), 2000);
+                    }
+                } else { // Casual
+                    this.history.push({correct, time});
+                    if (correct) {
+                        this.score += 100;
+                        UI.showFeedback(true, "Correct!", "+100 pts");
+                    } else {
+                        UI.showFeedback(false, "Incorrect", `It was ${this.symbolCount}`);
+                    }
+                    this.turn++;
+                    setTimeout(() => this.nextTurn(), 1500);
+                }
+            },
+
+            handleCorrect(time) {
+                // In training, we track attempts per specific turn success
+                this.history.push({correct: true, time, attempts: this.turnAttempts});
+                
+                if(this.mode === 'arcade') this.score++;
+                else this.score += 10;
+                
+                UI.showFeedback(true, "Great!", this.mode === 'arcade' ? "+1 Round" : "");
+                this.turn++;
+                setTimeout(() => this.nextTurn(), 1000);
+            },
+
+            endGame() {
+                this.active = false;
+                clearTimeout(this.timerId);
+                this.saveHighScore(); // Ensure saved
+                UI.showResults();
+            }
+        };
+
+        const UI = {
+            ids: ['view-menu', 'view-settings', 'view-game', 'view-results'],
+            
+            show(id) {
+                this.ids.forEach(x => document.getElementById(x).classList.add('hidden'));
+                document.getElementById(id).classList.remove('hidden');
+                
+                const homeBtn = document.getElementById('btn-home');
+                if(id === 'view-menu') homeBtn.classList.add('hidden');
+                else {
+                    homeBtn.classList.remove('hidden');
+                    // Header exit button logic
+                    homeBtn.onclick = () => {
+                        Game.active = false;
+                        UI.showMenu();
+                    };
+                }
+            },
+
+            showMenu() { this.show('view-menu'); Game.updateHighScores(); },
+            
+            showSettings(mode) { 
+                this.show('view-settings');
+                document.getElementById('settings-casual').classList.toggle('hidden', mode !== 'casual');
+                document.getElementById('settings-training').classList.toggle('hidden', mode !== 'training');
+                document.getElementById('settings-title').innerText = mode.toUpperCase() + " SETUP";
+            },
+            
+            showGame() { this.show('view-game'); },
+
+            resetTurn() {
+                document.getElementById('controls-input').classList.add('hidden');
+                document.getElementById('controls-training').classList.add('hidden');
+                document.getElementById('controls-wait').classList.remove('hidden');
+                document.getElementById('timer-container').classList.add('hidden');
+                document.getElementById('answer-input').value = '';
+                document.getElementById('training-input').value = '';
+                document.getElementById('mask-layer').classList.add('hidden');
+                document.getElementById('symbol-layer').classList.remove('hidden');
+                const fb = document.getElementById('feedback-overlay');
+                fb.classList.add('hidden');
+                document.getElementById('feedback-content').classList.remove('scale-100');
+                document.getElementById('feedback-content').classList.add('scale-0');
+            },
+
+            updateHUD(turn, score) {
+                document.getElementById('hud-turn').innerText = turn;
+                document.getElementById('hud-score').innerText = score;
+            },
+
+            startTimerBar(duration) {
+                const container = document.getElementById('timer-container');
+                const bar = document.getElementById('timer-bar');
+                container.classList.remove('hidden');
+                bar.style.width = '100%';
+                void bar.offsetWidth; // Reflow
+                bar.style.transition = `width ${duration}ms linear`;
+                bar.style.width = '0%';
+            },
+
+            startInputPhase() {
+                document.getElementById('symbol-layer').classList.add('hidden');
+                document.getElementById('mask-layer').classList.remove('hidden');
+                document.getElementById('controls-wait').classList.add('hidden');
+                document.getElementById('controls-input').classList.remove('hidden');
+                document.getElementById('controls-input').classList.add('flex');
+                document.getElementById('timer-container').classList.add('hidden');
+                setTimeout(() => document.getElementById('answer-input').focus(), 50);
+            },
+
+            showTrainingInput() {
+                document.getElementById('controls-wait').classList.add('hidden');
+                document.getElementById('controls-training').classList.remove('hidden');
+                document.getElementById('controls-training').classList.add('flex');
+                setTimeout(() => document.getElementById('training-input').focus(), 50);
+            },
+
+            showFeedback(isGood, text, subtext = "") {
+                const ol = document.getElementById('feedback-overlay');
+                const content = document.getElementById('feedback-content');
+                const icon = document.getElementById('feedback-icon');
+                const txt = document.getElementById('feedback-text');
+                const sub = document.getElementById('feedback-sub');
+
+                ol.classList.remove('hidden');
+                requestAnimationFrame(() => {
+                    content.classList.remove('scale-0');
+                    content.classList.add('scale-100');
+                });
+
+                icon.innerHTML = isGood 
+                    ? '<i class="fas fa-check-circle text-emerald-500"></i>' 
+                    : '<i class="fas fa-times-circle text-rose-500"></i>';
+                
+                txt.innerText = text;
+                txt.className = `text-3xl font-black ${isGood ? 'text-emerald-600' : 'text-rose-600'}`;
+                sub.innerText = subtext;
+            },
+
+            showResults() {
+                this.show('view-results');
+                
+                const hist = Game.history;
+                const totalTurns = hist.length;
+                
+                // --- ACCURACY CALCULATION ---
+                let acc = 0;
+                
+                if (Game.mode === 'training') {
+                    // Training Accuracy: (Successful Turns / Total Attempts Made) * 100
+                    // If I tried 10 times to solve 5 turns, my accuracy is 50%.
+                    const totalAttempts = Game.totalAttempts || 1; 
+                    // Note: hist only records the *successful* finalization of a turn in training mode usually,
+                    // but we tracked Game.totalAttempts separately in submitAnswer.
+                    // Actually, let's use the successful turns count vs total clicks.
+                    const successes = hist.filter(h => h.correct).length;
+                    acc = totalAttempts > 0 ? Math.round((successes / totalAttempts) * 100) : 0;
+                } 
+                else {
+                    // Casual Mode: Standard Correct/Total
+                    const correct = hist.filter(h => h.correct).length;
+                    acc = totalTurns ? Math.round((correct/totalTurns)*100) : 0;
+                }
+
+                let avgTime = 0;
+                if(totalTurns) {
+                    avgTime = (hist.reduce((a,b)=>a+b.time, 0) / totalTurns / 1000).toFixed(1);
+                }
+
+                // UI Mode Specifics
+                const boxAcc = document.getElementById('res-box-acc');
+                const boxBest = document.getElementById('res-box-best');
+
+                if (Game.mode === 'arcade') {
+                    boxAcc.classList.add('hidden');
+                    boxBest.classList.remove('hidden');
+                    // Ensure high score is fresh
+                    Game.updateHighScores();
+                } else {
+                    boxAcc.classList.remove('hidden');
+                    boxBest.classList.add('hidden');
+                }
+
+                document.getElementById('res-val-score').innerText = Game.score;
+                document.getElementById('res-val-acc').innerText = acc + '%';
+                // Arcade subtracts 1 because the last turn was a failure
+                const rounds = Game.mode === 'arcade' ? (Game.turn - 1) : Game.turn; 
+                document.getElementById('res-val-rounds').innerText = Math.max(0, rounds);
+                document.getElementById('res-val-time').innerText = avgTime + 's';
+
+                const icon = document.getElementById('res-icon');
+                const subtitle = document.getElementById('res-subtitle');
+
+                if (Game.mode === 'arcade') {
+                     icon.innerHTML = '<i class="fas fa-bolt text-rose-500"></i>';
+                     subtitle.innerText = "Fast & Furious!";
+                } else {
+                    if(acc > 80) {
+                        icon.innerHTML = '<i class="fas fa-trophy text-yellow-400"></i>';
+                        subtitle.innerText = "Eagle Eyes!";
+                    } else if(acc > 50) {
+                        icon.innerHTML = '<i class="fas fa-thumbs-up text-indigo-400"></i>';
+                        subtitle.innerText = "Solid Performance!";
+                    } else {
+                        icon.innerHTML = '<i class="fas fa-glasses text-slate-400"></i>';
+                        subtitle.innerText = "Keep Practicing!";
+                    }
+                }
+            }
+        };
+
+        window.onload = () => Game.init();
+    </script>
+</body>
+</html>
