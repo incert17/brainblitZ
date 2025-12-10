@@ -14,7 +14,7 @@
             background-color: #f8fafc;
             color: #334155;
             user-select: none;
-            overflow: hidden;
+            overflow-x: hidden;
         }
 
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
@@ -31,6 +31,31 @@
             justify-content: center;
             transition: transform 0.2s ease;
         }
+
+        .card-container {
+            display: flex;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            gap: 1rem;
+            padding: 0.5rem;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .card {
+            min-width: 250px;
+            flex: 0 0 auto;
+            background-color: #fff;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            transition: transform 0.2s ease;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
 <body class="p-6">
@@ -39,10 +64,15 @@
         <p class="text-lg text-gray-600 fade-in">Train your brain with quick games!</p>
     </div>
 
-    <div id="gameCards" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+    <div class="card-container">
+        <!-- Dynamic cards will be inserted here -->
+    </div>
+
+    <!-- Game content loader -->
+    <div id="gameContent" class="mt-8"></div>
 
     <script>
-        // List of games, easy to update
+        // List of games
         const games = [
             { name: "Visual Counter", icon: "fa-eye", path: "games/viscount.html" },
             { name: "Blitz Maths", icon: "fa-calculator", path: "games/bmaths.html" },
@@ -50,25 +80,36 @@
             { name: "Word Blitz", icon: "fa-brain", path: "#", status: "coming soon" }
         ];
 
-        // Generate cards
-        const container = document.getElementById("gameCards");
+        const cardContainer = document.querySelector(".card-container");
+        const gameContent = document.getElementById("gameContent");
+
         games.forEach(game => {
             const card = document.createElement("div");
-            card.className = "p-6 bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow fade-in";
+            card.className = "card fade-in";
             card.innerHTML = `
-                <div class="flex items-center justify-center mb-4 text-5xl text-purple-600">
+                <div class="flex items-center justify-center mb-3 text-4xl text-purple-600">
                     <i class="fas ${game.icon}"></i>
                 </div>
-                <h2 class="text-2xl font-semibold text-center text-purple-700">${game.name}</h2>
+                <h2 class="text-xl font-semibold text-center text-purple-700">${game.name}</h2>
                 <p class="mt-2 text-center text-gray-600">
                     ${game.status ? "Coming Soon" : "Play Now!"}
                 </p>
             `;
+
             if (!game.status) {
-                card.onclick = () => window.location.replace(game.path);
-                card.style.cursor = "pointer";
+                card.onclick = () => {
+                    fetch(game.path)
+                        .then(response => response.text())
+                        .then(html => {
+                            gameContent.innerHTML = html;
+                            history.replaceState(null, "", "?game=" + game.name); // URL won't update visibly[web:29]
+                        })
+                        .catch(err => console.error("Failed to load game:", err));
+                };
+            } else {
+                card.style.opacity = 0.6;
             }
-            container.appendChild(card);
+            cardContainer.appendChild(card);
         });
     </script>
 </body>
