@@ -2,44 +2,223 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>brainblitZ</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>brainblitZ - Cognitive Training Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
         body {
             font-family: 'Nunito', sans-serif;
-            background-color: #f8fafc;
-            color: #334155;
+            background-color: #f8fafc; /* Slate-50 */
+            color: #334155; /* Slate-700 */
+            -webkit-tap-highlight-color: transparent;
         }
+
+        /* Animations */
+        .fade-in { animation: fadeIn 0.5s ease-out forwards; opacity: 0; transform: translateY(20px); }
+        @keyframes fadeIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Hover effects only for active cards */
+        .card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+        .card-hover:active { transform: scale(0.98); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<body class="p-4">
-    <h1 class="text-3xl font-bold text-center mb-8 text-slate-700">brainblitZ</h1>
-    <div id="gamesContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+<body class="min-h-screen flex flex-col items-center p-4 sm:p-8 bg-slate-50">
+
+    <!-- Header Section -->
+    <header class="w-full max-w-4xl flex justify-between items-center mb-8 fade-in" style="animation-delay: 0s;">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                <i class="fas fa-brain text-2xl"></i>
+            </div>
+            <div>
+                <h1 class="text-3xl font-black tracking-tight text-slate-800">
+                    brain<span class="text-indigo-600">blitZ</span>
+                </h1>
+                <p class="text-sm font-bold text-slate-400 uppercase tracking-wider">Daily Cognitive Training</p>
+            </div>
+        </div>
+        
+        <!-- Profile / Stats Summary -->
+        <div class="hidden sm:flex items-center gap-4 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm">
+            <div class="text-right">
+                <div class="text-[10px] font-black text-slate-400 uppercase">Total Score</div>
+                <div class="font-black text-indigo-600 leading-none" id="total-score">0</div>
+            </div>
+            <div class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">
+                <i class="fas fa-user"></i>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Grid (Content Injected via JS) -->
+    <main id="game-grid" class="w-full max-w-4xl grid grid-cols-1 sm:grid-cols-2 gap-6 pb-12">
+        <!-- Javascript will populate cards here -->
+    </main>
+
+    <footer class="text-center text-slate-400 text-sm font-bold pb-8 fade-in" id="footer-section">
+        <p>&copy; 2023 brainblitZ. All rights reserved.</p>
+    </footer>
 
     <script>
+        // --- CONFIGURATION ---
         const games = [
-            { name: "Visual Trainer", description: "Sharpen your focus and counting skills.", url: "games/viscount.html" },
-            { name: "Game 2", description: "Description for Game 2.", url: "#" },
-            { name: "Game 3", description: "Description for Game 3.", url: "#" },
-            { name: "Game 4", description: "Description for Game 4.", url: "#" }
-            // Add more games as needed
+            {
+                id: 'visual-counter',
+                title: 'Visual Counter',
+                category: 'Focus',
+                description: 'Train your visual processing speed. Count objects instantly before they disappear.',
+                icon: 'fa-eye',
+                color: 'indigo', 
+                link: 'games/viscount.html',
+                scoreKey: 'vt_arcade_best',
+                status: 'live' 
+            },
+            {
+                id: 'blitz-maths',
+                title: 'Blitz Maths',
+                category: 'Arithmetic',
+                description: 'Rapid fire arithmetic. Solve equations against the clock. One mistake is game over.',
+                icon: 'fa-calculator',
+                color: 'rose',
+                link: '#',
+                scoreKey: 'bm_highscore',
+                status: 'dev'
+            },
+            {
+                id: 'word-up',
+                title: 'Word Up',
+                category: 'Language',
+                description: 'Unscramble letters to form words. The longer the word, the higher the score.',
+                icon: 'fa-spell-check',
+                color: 'emerald',
+                link: '#', 
+                scoreKey: 'wu_highscore',
+                status: 'dev' // Set to 'dev' to test greyed out state
+            },
+            {
+                id: 'memory-matrix',
+                title: 'Memory Matrix',
+                category: 'Memory',
+                description: 'Remember the highlighted grid patterns and recreate them after they vanish.',
+                icon: 'fa-border-all',
+                color: 'amber',
+                link: '#',
+                scoreKey: 'mm_highscore',
+                status: 'dev'
+            }
         ];
 
-        const gamesContainer = document.getElementById('gamesContainer');
+        // --- RENDER LOGIC ---
+        function initDashboard() {
+            const grid = document.getElementById('game-grid');
+            let totalScore = 0;
+            let animationDelay = 0.1;
 
-        games.forEach(game => {
-            const card = document.createElement('div');
-            card.className = 'bg-white rounded-xl shadow-md p-5 border border-slate-200 flex flex-col transition-all hover:shadow-lg';
-            card.innerHTML = `
-                <h3 class="font-bold text-lg text-slate-700 mb-2">${game.name}</h3>
-                <p class="text-slate-500 text-sm mb-4">${game.description}</p>
-                <a href="${game.url}" class="mt-auto px-4 py-2 bg-indigo-600 text-white rounded-lg text-center hover:bg-indigo-700 font-semibold">Play</a>
+            games.forEach(game => {
+                const isLive = game.status === 'live';
+                
+                // 1. Fetch Score
+                const bestScore = localStorage.getItem(game.scoreKey) || 0;
+                if(isLive) {
+                    totalScore += parseInt(bestScore);
+                }
+
+                // 2. Logic for Live vs Dev styling
+                const tagType = isLive ? 'a' : 'div';
+                const hrefAttr = isLive ? `href="${game.link}"` : '';
+                
+                // Live Styles: White bg, Hover effects, normal opacity
+                // Dev Styles: Slate bg, Grayscale filter, Lower opacity, No cursor
+                const containerClasses = isLive 
+                    ? 'bg-white card-hover group cursor-pointer' 
+                    : 'bg-slate-50 opacity-60 grayscale cursor-not-allowed border-dashed';
+
+                const icon = isLive ? 'fa-arrow-right' : 'fa-lock';
+                const iconColorClass = isLive ? `group-hover:text-${game.color}-500` : 'text-slate-400';
+                
+                // 3. Score vs "Coming Soon" text
+                const footerContent = isLive 
+                    ? `<div class="text-xs font-bold text-slate-400">Personal Best</div>
+                       <div class="text-lg font-black text-slate-700">${bestScore > 0 ? bestScore : '-'}</div>`
+                    : `<div class="w-full text-center text-xs font-bold text-slate-500 uppercase tracking-widest bg-slate-200 py-1 rounded-md">Coming Soon</div>`;
+
+                // 4. Create Card HTML
+                const cardHTML = `
+                <${tagType} ${hrefAttr} class="${containerClasses} relative p-6 rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col fade-in" style="animation-delay: ${animationDelay}s;">
+                    
+                    <!-- Top Right Icon (Arrow or Lock) -->
+                    <div class="absolute top-0 right-0 p-4 transition-opacity ${isLive ? 'opacity-50 group-hover:opacity-100' : 'opacity-100'}">
+                        <i class="fas ${icon} text-slate-300 ${iconColorClass} transform ${isLive ? 'group-hover:translate-x-1' : ''} transition-all"></i>
+                    </div>
+                    
+                    <!-- Header -->
+                    <div class="flex items-start gap-5 mb-4">
+                        <div class="w-16 h-16 rounded-2xl bg-${game.color}-50 text-${game.color}-600 flex items-center justify-center text-3xl shadow-inner ${isLive ? 'group-hover:scale-110' : ''} transition-transform duration-300">
+                            <i class="fas ${game.icon}"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-extrabold text-slate-800 ${isLive ? `group-hover:text-${game.color}-600` : ''} transition-colors">${game.title}</h2>
+                            <span class="inline-block mt-1 px-2.5 py-0.5 rounded-full bg-${game.color}-100 text-${game.color}-700 text-[10px] font-bold uppercase tracking-wide">${game.category}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Description -->
+                    <p class="text-slate-500 font-medium text-sm mb-6 flex-1 leading-relaxed">
+                        ${game.description}
+                    </p>
+
+                    <!-- Footer -->
+                    <div class="flex items-center justify-between border-t border-slate-100 pt-4">
+                        ${footerContent}
+                    </div>
+                </${tagType}>
+                `;
+
+                grid.innerHTML += cardHTML;
+                animationDelay += 0.1;
+            });
+
+            // "More Games" Placeholder
+            const comingSoonHTML = `
+                <div class="group relative bg-slate-100 p-6 rounded-3xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-center opacity-70 fade-in" style="animation-delay: ${animationDelay}s;">
+                    <div class="w-12 h-12 rounded-xl bg-slate-200 text-slate-400 flex items-center justify-center text-xl mb-3">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-500">More Games</h3>
+                    <p class="text-xs text-slate-400 mt-1">Updates Monthly</p>
+                </div>
             `;
-            gamesContainer.appendChild(card);
-        });
+            grid.innerHTML += comingSoonHTML;
+            document.getElementById('footer-section').style.animationDelay = `${animationDelay + 0.1}s`;
+
+            // Update Total Score Animation
+            const totalEl = document.getElementById('total-score');
+            let start = 0;
+            const duration = 1000;
+            const step = timestamp => {
+                if (!start) start = timestamp;
+                const progress = Math.min((timestamp - start) / duration, 1);
+                totalEl.innerText = Math.floor(progress * totalScore).toLocaleString();
+                if (progress < 1) window.requestAnimationFrame(step);
+            };
+            if(totalScore > 0) window.requestAnimationFrame(step);
+            else totalEl.innerText = "0";
+        }
+
+        document.addEventListener('DOMContentLoaded', initDashboard);
+
     </script>
 </body>
 </html>
