@@ -11,106 +11,87 @@
 
         body {
             font-family: 'Nunito', sans-serif;
-            background-color: #f8fafc;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
             color: #334155;
             user-select: none;
-            overflow-x: hidden;
-        }
-
-        .fade-in { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .game-symbol {
-            position: absolute;
-            transform: translate(-50%, -50%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.2s ease;
-        }
-
-        .card-container {
-            display: flex;
-            overflow-x: auto;
-            scroll-behavior: smooth;
-            gap: 1rem;
-            padding: 0.5rem;
-            -webkit-overflow-scrolling: touch;
         }
 
         .card {
-            min-width: 250px;
-            flex: 0 0 auto;
-            background-color: #fff;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 1.5rem;
-            transition: transform 0.2s ease;
-            cursor: pointer;
+            @apply bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 mb-6;
         }
 
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        .grid-container {
+            @apply grid grid-cols-1 md:grid-cols-2 gap-6;
+        }
+
+        .hero {
+            @apply text-center py-10 px-6 bg-gradient-to-r from-purple-600 to-indigo-700 text-white rounded-lg mb-8;
+        }
+
+        .btn {
+            @apply px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition;
         }
     </style>
 </head>
 <body class="p-6">
-    <div class="text-center mb-8">
-        <h1 class="text-4xl font-bold text-purple-700 fade-in">brainblitZ</h1>
-        <p class="text-lg text-gray-600 fade-in">Train your brain with quick games!</p>
+    <div class="hero">
+        <h1 class="text-5xl font-bold mb-2">brainblitZ</h1>
+        <p class="text-xl">Boost your mind with quick, fun games.</p>
     </div>
 
-    <div class="card-container">
-        <!-- Dynamic cards will be inserted here -->
+    <div class="grid-container">
+        <!-- Visual Counter Game -->
+        <div class="card">
+            <div class="flex justify-center text-6xl text-purple-600 mb-4">
+                <i class="fas fa-eye"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-center mb-2">Visual Counter</h2>
+            <p class="text-center text-gray-600 mb-4">Test your observation and counting skills!</p>
+            <button class="btn w-full" onclick="loadGame('games/viscount.html')">Play Now</button>
+        </div>
+
+        <!-- Blitz Maths Game -->
+        <div class="card">
+            <div class="flex justify-center text-6xl text-purple-600 mb-4">
+                <i class="fas fa-calculator"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-center mb-2">Blitz Maths</h2>
+            <p class="text-center text-gray-600 mb-4">Solve math problems in a flash!</p>
+            <button class="btn w-full" onclick="loadGame('games/bmaths.html')">Play Now</button>
+        </div>
+
+        <!-- Coming Soon Placeholder -->
+        <div class="card">
+            <div class="flex justify-center text-6xl text-gray-400 mb-4">
+                <i class="fas fa-clock"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-center mb-2">Memory Matrix</h2>
+            <p class="text-center text-gray-500 mb-4">Coming soon...</p>
+            <button class="btn w-full opacity-50 cursor-not-allowed" disabled>Coming Soon</button>
+        </div>
+
+        <div class="card">
+            <div class="flex justify-center text-6xl text-gray-400 mb-4">
+                <i class="fas fa-brain"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-center mb-2">Word Blitz</h2>
+            <p class="text-center text-gray-500 mb-4">Coming soon...</p>
+            <button class="btn w-full opacity-50 cursor-not-allowed" disabled>Coming Soon</button>
+        </div>
     </div>
 
-    <!-- Game content loader -->
     <div id="gameContent" class="mt-8"></div>
 
     <script>
-        // List of games
-        const games = [
-            { name: "Visual Counter", icon: "fa-eye", path: "games/viscount.html" },
-            { name: "Blitz Maths", icon: "fa-calculator", path: "games/bmaths.html" },
-            { name: "Memory Matrix", icon: "fa-puzzle-piece", path: "#", status: "coming soon" },
-            { name: "Word Blitz", icon: "fa-brain", path: "#", status: "coming soon" }
-        ];
-
-        const cardContainer = document.querySelector(".card-container");
-        const gameContent = document.getElementById("gameContent");
-
-        games.forEach(game => {
-            const card = document.createElement("div");
-            card.className = "card fade-in";
-            card.innerHTML = `
-                <div class="flex items-center justify-center mb-3 text-4xl text-purple-600">
-                    <i class="fas ${game.icon}"></i>
-                </div>
-                <h2 class="text-xl font-semibold text-center text-purple-700">${game.name}</h2>
-                <p class="mt-2 text-center text-gray-600">
-                    ${game.status ? "Coming Soon" : "Play Now!"}
-                </p>
-            `;
-
-            if (!game.status) {
-                card.onclick = () => {
-                    fetch(game.path)
-                        .then(response => response.text())
-                        .then(html => {
-                            gameContent.innerHTML = html;
-                            history.replaceState(null, "", "?game=" + game.name); // URL won't update visibly[web:29]
-                        })
-                        .catch(err => console.error("Failed to load game:", err));
-                };
-            } else {
-                card.style.opacity = 0.6;
-            }
-            cardContainer.appendChild(card);
-        });
+        function loadGame(path) {
+            fetch(path)
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('gameContent').innerHTML = html;
+                    history.replaceState(null, '', '#');
+                })
+                .catch(err => console.error("Failed to load game:", err));
+        }
     </script>
 </body>
 </html>
