@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blitz Maths Challenge</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Blitz Maths</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -38,8 +38,16 @@
         }
 
         /* Timer Bar Animation */
-        .timer-bar {
-            transition: width linear;
+        .timer-bar { transition: width linear; }
+
+        /* Custom Input Styling */
+        .input-group {
+            transition: all 0.2s ease;
+        }
+        .input-group:focus-within {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.2), 0 8px 10px -6px rgba(79, 70, 229, 0.1);
+            border-color: #6366f1;
         }
     </style>
 </head>
@@ -107,7 +115,7 @@
 
             <!-- GAME VIEW -->
             <div id="view-game" class="hidden absolute inset-0 flex flex-col">
-                <!-- Timer Bar (Only visible in Arcade) -->
+                <!-- Timer Bar -->
                 <div id="timer-container" class="h-2 w-full bg-slate-200 hidden">
                     <div id="timer-bar" class="h-full bg-rose-500 w-full timer-bar"></div>
                 </div>
@@ -129,33 +137,38 @@
                     </div>
                 </div>
 
-                <!-- Question Area -->
-                <div id="game-board" class="flex-1 flex flex-col items-center justify-center relative p-4">
+                <!-- Game Board -->
+                <div id="game-board" class="flex-1 flex flex-col items-center justify-center relative p-4 pb-20 sm:pb-4">
                     
-                    <div class="w-full max-w-lg relative">
-                        <!-- Mathematical Operation Display -->
-                        <div id="math-display" class="text-center mb-12 transform transition-all duration-200">
-                            <div class="text-slate-400 text-sm font-bold uppercase tracking-widest mb-4">Calculate</div>
-                            <div id="question-text" class="text-5xl sm:text-7xl font-black text-slate-800 tracking-tight leading-tight">
-                                <!-- Question injected here -->
+                    <div class="w-full max-w-md relative flex flex-col items-center">
+                        
+                        <!-- Question Display -->
+                        <div id="math-display" class="text-center mb-8 transform transition-all duration-200 w-full">
+                            <div class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">Solve this</div>
+                            <div id="question-text" class="text-6xl sm:text-7xl font-black text-slate-800 tracking-tight leading-tight select-none">
+                                <!-- Question -->
                             </div>
                         </div>
 
-                        <!-- Input Area -->
-                        <div class="w-full flex gap-3 max-w-sm mx-auto relative z-20">
-                            <input type="number" id="answer-input" placeholder="?" 
-                                   class="flex-1 bg-white text-center text-4xl font-bold p-4 rounded-2xl border-4 border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition-all shadow-sm placeholder:text-slate-200"
-                                   autocomplete="off" inputmode="numeric">
+                        <!-- REDESIGNED INPUT AREA -->
+                        <!-- A single pill container for input + button -->
+                        <div class="input-group w-full max-w-[320px] bg-white rounded-full p-2 border-2 border-slate-200 shadow-sm flex items-center relative z-20">
                             
-                            <button onclick="Game.submitAnswer()" class="w-20 bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-bold rounded-2xl shadow-lg shadow-indigo-200 active:scale-95 transition-transform flex items-center justify-center">
-                                <i class="fas fa-arrow-right"></i>
+                            <!-- Input: Large, centered text, transparent bg -->
+                            <input type="number" id="answer-input" placeholder="?" 
+                                   class="w-full h-16 bg-transparent text-center text-4xl font-bold text-slate-800 outline-none placeholder:text-slate-200 ml-4"
+                                   autocomplete="off" pattern="[0-9]*" inputmode="numeric">
+                            
+                            <!-- Button: Circular, absolute positioned inside right -->
+                            <button onclick="Game.submitAnswer()" class="w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full flex-shrink-0 flex items-center justify-center shadow-md active:scale-95 transition-all ml-2">
+                                <i class="fas fa-check text-xl"></i>
                             </button>
                         </div>
                         
-                        <p class="text-center text-slate-400 text-sm mt-4 font-semibold animate-pulse">Press Enter to submit</p>
+                        <p class="text-center text-slate-300 text-xs mt-4 font-semibold">Tap Enter or Check button</p>
                     </div>
 
-                    <!-- Feedback Flash (Background) -->
+                    <!-- Feedback Flash -->
                     <div id="feedback-flash" class="absolute inset-0 pointer-events-none opacity-0 transition-opacity duration-300 z-0"></div>
                 </div>
             </div>
@@ -190,7 +203,6 @@
     </div>
 
     <script>
-        // --- MATH GENERATOR LOGIC ---
         const MathGen = {
             randomInt: (min, max) => Math.floor(Math.random() * (max - min + 1)) + min,
 
@@ -267,7 +279,6 @@
             }
         };
 
-        // --- TIMER LOGIC ---
         const Timer = {
             interval: null,
             totalTime: 0,
@@ -277,8 +288,7 @@
                 this.stop();
                 this.totalTime = seconds * 1000;
                 this.remainingTime = this.totalTime;
-                
-                const step = 50; // Update every 50ms
+                const step = 50; 
                 
                 this.interval = setInterval(() => {
                     this.remainingTime -= step;
@@ -298,10 +308,9 @@
             }
         };
 
-        // --- GAME LOGIC ---
         const Game = {
             active: false,
-            mode: 'training', // 'arcade' or 'training'
+            mode: 'training', 
             score: 0,
             questionCount: 1,
             currentQ: null,
@@ -325,11 +334,8 @@
                 this.currentQ = MathGen.getQuestion(this.questionCount);
                 UI.renderQuestion(this.currentQ.text, this.questionCount, this.score);
                 
-                // Logic for Arcade Mode Timer
                 if (this.mode === 'arcade') {
-                    // Base time 12s, reduce by 0.2s per level, min 3s
                     const timeLimit = Math.max(3, 12 - (this.questionCount * 0.2));
-                    
                     Timer.start(
                         timeLimit, 
                         (pct) => UI.updateTimer(pct), 
@@ -356,8 +362,7 @@
                 }
 
                 if (userVal === this.currentQ.val) {
-                    // Correct
-                    Timer.stop(); // Stop timer immediately
+                    Timer.stop(); 
                     this.score += 10;
                     if(this.mode === 'arcade') this.score += Math.floor(this.questionCount / 2);
                     
@@ -365,14 +370,12 @@
                     UI.flashFeedback('correct');
                     this.nextTurn();
                 } else {
-                    // Incorrect
                     Timer.stop();
                     UI.flashFeedback('wrong');
                     
                     if (this.mode === 'arcade') {
                         this.gameOver("Wrong Answer");
                     } else {
-                        // Training Mode: Just shake and clear
                         UI.shakeBoard();
                         input.value = '';
                         input.focus();
@@ -387,22 +390,18 @@
 
             gameOver(reason) {
                 this.active = false;
-                
-                // Save High Score only for Arcade
                 if (this.mode === 'arcade') {
                     const currentBest = parseInt(localStorage.getItem('blitz_highscore') || '0');
                     if (this.score > currentBest) {
                         localStorage.setItem('blitz_highscore', this.score);
                     }
                 }
-
                 setTimeout(() => {
                     UI.showResults(this.score, reason, this.mode);
                 }, 800);
             }
         };
 
-        // --- UI CONTROLLER ---
         const UI = {
             ids: ['view-menu', 'view-game', 'view-results'],
 
@@ -435,7 +434,6 @@
             showGame(mode) { 
                 this.show('view-game'); 
                 
-                // Configure UI based on mode
                 const timerCont = document.getElementById('timer-container');
                 const badge = document.getElementById('mode-badge');
                 const board = document.getElementById('game-board');
@@ -449,14 +447,13 @@
                     timerCont.classList.add('hidden');
                     badge.innerText = 'Training';
                     badge.className = "px-3 py-1 bg-emerald-100 rounded-full text-xs font-bold text-emerald-600 uppercase tracking-wide";
-                    board.classList.add('bg-emerald-50/30'); // Slight tint for training
+                    board.classList.add('bg-emerald-50/30');
                 }
             },
 
             updateTimer(pct) {
                 const bar = document.getElementById('timer-bar');
                 bar.style.width = `${pct}%`;
-                // Change color based on urgency
                 if (pct < 30) bar.className = 'h-full w-full timer-bar bg-rose-600';
                 else if (pct < 60) bar.className = 'h-full w-full timer-bar bg-orange-500';
                 else bar.className = 'h-full w-full timer-bar bg-emerald-500';
@@ -470,7 +467,6 @@
                 document.getElementById('res-title').innerText = reason === "Time's Up!" ? "Time's Up!" : "Game Over";
                 document.getElementById('res-reason').innerText = reason;
 
-                // Adjust icon for Time's Up vs Wrong
                 const iconContainer = document.getElementById('res-icon');
                 if (reason === "Time's Up!") {
                     iconContainer.innerHTML = '<i class="fas fa-hourglass-end"></i>';
