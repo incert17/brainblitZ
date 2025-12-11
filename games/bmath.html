@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blitz Maths Challenge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+            user-select: none;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; margin: 0; 
+        }
+
+        /* Timer Bar Animation */
+        .timer-bar {
+            transition: width linear;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex items-center justify-center p-2 sm:p-4 bg-slate-50">
+
+    <!-- App Container -->
+    <div id="app-container" class="w-full max-w-4xl h-full max-h-[800px] bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col relative border border-slate-200">
+        
+        <!-- Header -->
+        <header class="bg-white p-4 flex justify-between items-center border-b border-slate-100 z-20 shadow-sm h-16 shrink-0">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <h1 class="font-bold text-lg text-slate-700">Blitz Maths</h1>
+            </div>
+            <button id="btn-home" onclick="UI.showMenu()" class="hidden px-3 py-1 text-sm font-semibold text-slate-500 hover:bg-slate-50 rounded-lg transition-colors border border-transparent hover:border-slate-200">
+                Exit
+            </button>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 relative overflow-hidden bg-slate-50/50">
+            
+            <!-- MENU VIEW -->
+            <div id="view-menu" class="absolute inset-0 p-6 flex flex-col items-center justify-center overflow-y-auto">
+                <div class="text-center mb-8">
+                    <h2 class="text-4xl font-extrabold text-slate-800 mb-2">Mental Speed</h2>
+                    <p class="text-slate-500 max-w-xs mx-auto">Select a mode to begin.</p>
+                </div>
+
+                <div class="grid w-full max-w-md gap-4">
+                    <!-- High Score Banner -->
+                    <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-trophy text-indigo-500 text-xl"></i>
+                            <span class="font-bold text-slate-700">Arcade Best</span>
+                        </div>
+                        <span id="menu-highscore" class="font-black text-2xl text-indigo-600">0</span>
+                    </div>
+
+                    <!-- Arcade Button -->
+                    <button onclick="Game.start('arcade')" class="flex items-center p-5 bg-white hover:bg-rose-50 border-2 border-slate-200 hover:border-rose-400 rounded-xl transition-all shadow-md group relative overflow-hidden">
+                        <div class="w-14 h-14 rounded-full bg-rose-500 text-white flex items-center justify-center text-xl mr-5 group-hover:scale-110 transition-transform shadow-lg shadow-rose-200 z-10">
+                            <i class="fas fa-stopwatch"></i>
+                        </div>
+                        <div class="text-left flex-1 z-10">
+                            <h3 class="font-bold text-xl text-slate-800">Arcade Mode</h3>
+                            <p class="text-sm text-slate-500">Timed. One life. High scores.</p>
+                        </div>
+                    </button>
+
+                    <!-- Training Button -->
+                    <button onclick="Game.start('training')" class="flex items-center p-5 bg-white hover:bg-emerald-50 border-2 border-slate-200 hover:border-emerald-400 rounded-xl transition-all shadow-md group">
+                        <div class="w-14 h-14 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xl mr-5 group-hover:scale-110 transition-transform shadow-lg shadow-emerald-200">
+                            <i class="fas fa-dumbbell"></i>
+                        </div>
+                        <div class="text-left flex-1">
+                            <h3 class="font-bold text-xl text-slate-800">Training Mode</h3>
+                            <p class="text-sm text-slate-500">No timer. Practice freely.</p>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- GAME VIEW -->
+            <div id="view-game" class="hidden absolute inset-0 flex flex-col">
+                <!-- Timer Bar (Only visible in Arcade) -->
+                <div id="timer-container" class="h-2 w-full bg-slate-200 hidden">
+                    <div id="timer-bar" class="h-full bg-rose-500 w-full timer-bar"></div>
+                </div>
+
+                <!-- HUD -->
+                <div class="h-14 flex justify-between items-center px-6 bg-white/80 border-b border-slate-100 shrink-0 backdrop-blur-sm z-10">
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">LEVEL</span>
+                        <span id="hud-level" class="text-slate-800 text-lg font-bold leading-none">1</span>
+                    </div>
+                    
+                    <div id="mode-badge" class="px-3 py-1 bg-slate-100 rounded-full text-xs font-bold text-slate-500 uppercase tracking-wide">
+                        Training
+                    </div>
+
+                    <div class="flex flex-col text-right">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">SCORE</span>
+                        <span id="hud-score" class="text-indigo-600 text-xl font-black leading-none">0</span>
+                    </div>
+                </div>
+
+                <!-- Question Area -->
+                <div id="game-board" class="flex-1 flex flex-col items-center justify-center relative p-4">
+                    
+                    <div class="w-full max-w-lg relative">
+                        <!-- Mathematical Operation Display -->
+                        <div id="math-display" class="text-center mb-12 transform transition-all duration-200">
+                            <div class="text-slate-400 text-sm font-bold uppercase tracking-widest mb-4">Calculate</div>
+                            <div id="question-text" class="text-5xl sm:text-7xl font-black text-slate-800 tracking-tight leading-tight">
+                                <!-- Question injected here -->
+                            </div>
+                        </div>
+
+                        <!-- Input Area -->
+                        <div class="w-full flex gap-3 max-w-sm mx-auto relative z-20">
+                            <input type="number" id="answer-input" placeholder="?" 
+                                   class="flex-1 bg-white text-center text-4xl font-bold p-4 rounded-2xl border-4 border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition-all shadow-sm placeholder:text-slate-200"
+                                   autocomplete="off" inputmode="numeric">
+                            
+                            <button onclick="Game.submitAnswer()" class="w-20 bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-bold rounded-2xl shadow-lg shadow-indigo-200 active:scale-95 transition-transform flex items-center justify-center">
+                                <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                        
+                        <p class="text-center text-slate-400 text-sm mt-4 font-semibold animate-pulse">Press Enter to submit</p>
+                    </div>
+
+                    <!-- Feedback Flash (Background) -->
+                    <div id="feedback-flash" class="absolute inset-0 pointer-events-none opacity-0 transition-opacity duration-300 z-0"></div>
+                </div>
+            </div>
+
+            <!-- RESULTS VIEW -->
+            <div id="view-results" class="hidden absolute inset-0 bg-white p-6 flex flex-col items-center justify-center z-50">
+                <div id="res-icon" class="w-20 h-20 bg-rose-100 rounded-full flex items-center justify-center mb-6 text-rose-500 text-4xl shadow-lg shadow-rose-100">
+                    <i class="fas fa-times"></i>
+                </div>
+                
+                <h2 id="res-title" class="text-3xl font-black text-slate-800 mb-1">Game Over</h2>
+                <p id="res-reason" class="text-slate-500 mb-8 font-medium">Incorrect Answer</p>
+                
+                <div class="grid grid-cols-2 gap-4 w-full max-w-xs mb-8">
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Final Score</div>
+                        <div id="res-score" class="text-4xl font-black text-slate-800 mt-1">0</div>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Best Score</div>
+                        <div id="res-highscore" class="text-4xl font-black text-indigo-600 mt-1">0</div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 w-full max-w-xs">
+                    <button onclick="UI.showMenu()" class="flex-1 py-4 border-2 border-slate-200 font-bold text-slate-600 rounded-xl hover:bg-slate-50 transition-colors">Menu</button>
+                    <button id="btn-retry" onclick="Game.restart()" class="flex-1 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95">Try Again</button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // --- MATH GENERATOR LOGIC ---
+        const MathGen = {
+            randomInt: (min, max) => Math.floor(Math.random() * (max - min + 1)) + min,
+
+            generateSimple: (level) => {
+                const ops = level < 6 ? ['+', '-'] : ['+', '-', '*', '/'];
+                const op = ops[MathGen.randomInt(0, ops.length - 1)];
+                let a, b;
+                const range = level * 2 + 10; 
+
+                switch (op) {
+                    case '+': a = MathGen.randomInt(1, range); b = MathGen.randomInt(1, range); break;
+                    case '-': a = MathGen.randomInt(1, range); b = MathGen.randomInt(1, a); break;
+                    case '*': a = MathGen.randomInt(2, 12); b = MathGen.randomInt(2, 12); break;
+                    case '/': b = MathGen.randomInt(2, 12); a = b * MathGen.randomInt(2, 12); break;
+                }
+                return { text: `${a} ${op.replace('*', '&times;').replace('/', '&divide;')} ${b}`, val: eval(`${a} ${op.replace('&times;', '*').replace('&divide;', '/')} ${b}`) };
+            },
+
+            generateCompound: (level) => {
+                const inner = MathGen.generateSimple(level - 3);
+                const innerVal = inner.val;
+                const innerText = `(${inner.text})`;
+                const ops = ['+', '-', '*', '/'];
+                const outerOp = ops[MathGen.randomInt(0, 3)];
+                let c, fullText, finalVal;
+                const innerIsLeft = Math.random() > 0.5;
+
+                switch (outerOp) {
+                    case '+':
+                        c = MathGen.randomInt(1, 20);
+                        finalVal = innerVal + c;
+                        fullText = innerIsLeft ? `${innerText} + ${c}` : `${c} + ${innerText}`;
+                        break;
+                    case '-':
+                        if (innerIsLeft) {
+                            c = MathGen.randomInt(1, innerVal);
+                            finalVal = innerVal - c;
+                            fullText = `${innerText} - ${c}`;
+                        } else {
+                            c = MathGen.randomInt(innerVal, innerVal + 20);
+                            finalVal = c - innerVal;
+                            fullText = `${c} - ${innerText}`;
+                        }
+                        break;
+                    case '*':
+                        c = MathGen.randomInt(2, 5);
+                        finalVal = innerVal * c;
+                        fullText = innerIsLeft ? `${innerText} &times; ${c}` : `${c} &times; ${innerText}`;
+                        break;
+                    case '/':
+                        if (innerIsLeft) {
+                            const factors = [];
+                            for(let i=2; i<=innerVal; i++) if(innerVal % i === 0) factors.push(i);
+                            if (factors.length > 0) {
+                                c = factors[MathGen.randomInt(0, factors.length-1)];
+                                finalVal = innerVal / c;
+                                fullText = `${innerText} &divide; ${c}`;
+                            } else return MathGen.generateCompound(level); 
+                        } else {
+                            if (innerVal === 0) return MathGen.generateCompound(level);
+                            finalVal = MathGen.randomInt(2, 10);
+                            c = finalVal * innerVal;
+                            fullText = `${c} &divide; ${innerText}`;
+                        }
+                        break;
+                }
+                return { text: fullText, val: finalVal };
+            },
+
+            getQuestion: (n) => {
+                if (n < 6) return MathGen.generateSimple(n);
+                if (n < 9) return MathGen.generateSimple(n);
+                return MathGen.generateCompound(n);
+            }
+        };
+
+        // --- TIMER LOGIC ---
+        const Timer = {
+            interval: null,
+            totalTime: 0,
+            remainingTime: 0,
+            
+            start(seconds, onTick, onComplete) {
+                this.stop();
+                this.totalTime = seconds * 1000;
+                this.remainingTime = this.totalTime;
+                
+                const step = 50; // Update every 50ms
+                
+                this.interval = setInterval(() => {
+                    this.remainingTime -= step;
+                    const pct = Math.max(0, (this.remainingTime / this.totalTime) * 100);
+                    onTick(pct);
+
+                    if (this.remainingTime <= 0) {
+                        this.stop();
+                        onComplete();
+                    }
+                }, step);
+            },
+
+            stop() {
+                if (this.interval) clearInterval(this.interval);
+                this.interval = null;
+            }
+        };
+
+        // --- GAME LOGIC ---
+        const Game = {
+            active: false,
+            mode: 'training', // 'arcade' or 'training'
+            score: 0,
+            questionCount: 1,
+            currentQ: null,
+
+            start(mode) {
+                this.active = true;
+                this.mode = mode;
+                this.score = 0;
+                this.questionCount = 1;
+                UI.showGame(mode);
+                this.nextTurn();
+            },
+
+            restart() {
+                this.start(this.mode);
+            },
+
+            nextTurn() {
+                if (!this.active) return;
+                
+                this.currentQ = MathGen.getQuestion(this.questionCount);
+                UI.renderQuestion(this.currentQ.text, this.questionCount, this.score);
+                
+                // Logic for Arcade Mode Timer
+                if (this.mode === 'arcade') {
+                    // Base time 12s, reduce by 0.2s per level, min 3s
+                    const timeLimit = Math.max(3, 12 - (this.questionCount * 0.2));
+                    
+                    Timer.start(
+                        timeLimit, 
+                        (pct) => UI.updateTimer(pct), 
+                        () => this.handleTimeout()
+                    );
+                }
+
+                setTimeout(() => {
+                    const input = document.getElementById('answer-input');
+                    input.value = '';
+                    input.focus();
+                }, 50);
+            },
+
+            submitAnswer() {
+                if (!this.active) return;
+                
+                const input = document.getElementById('answer-input');
+                const userVal = parseInt(input.value);
+
+                if (isNaN(userVal)) {
+                    UI.shakeBoard();
+                    return;
+                }
+
+                if (userVal === this.currentQ.val) {
+                    // Correct
+                    Timer.stop(); // Stop timer immediately
+                    this.score += 10;
+                    if(this.mode === 'arcade') this.score += Math.floor(this.questionCount / 2);
+                    
+                    this.questionCount++;
+                    UI.flashFeedback('correct');
+                    this.nextTurn();
+                } else {
+                    // Incorrect
+                    Timer.stop();
+                    UI.flashFeedback('wrong');
+                    
+                    if (this.mode === 'arcade') {
+                        this.gameOver("Wrong Answer");
+                    } else {
+                        // Training Mode: Just shake and clear
+                        UI.shakeBoard();
+                        input.value = '';
+                        input.focus();
+                    }
+                }
+            },
+
+            handleTimeout() {
+                UI.flashFeedback('wrong');
+                this.gameOver("Time's Up!");
+            },
+
+            gameOver(reason) {
+                this.active = false;
+                
+                // Save High Score only for Arcade
+                if (this.mode === 'arcade') {
+                    const currentBest = parseInt(localStorage.getItem('blitz_highscore') || '0');
+                    if (this.score > currentBest) {
+                        localStorage.setItem('blitz_highscore', this.score);
+                    }
+                }
+
+                setTimeout(() => {
+                    UI.showResults(this.score, reason, this.mode);
+                }, 800);
+            }
+        };
+
+        // --- UI CONTROLLER ---
+        const UI = {
+            ids: ['view-menu', 'view-game', 'view-results'],
+
+            init() {
+                const best = localStorage.getItem('blitz_highscore') || '0';
+                document.getElementById('menu-highscore').innerText = best;
+                
+                document.getElementById('answer-input').addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') Game.submitAnswer();
+                });
+
+                this.showMenu();
+            },
+
+            show(id) {
+                this.ids.forEach(x => document.getElementById(x).classList.add('hidden'));
+                document.getElementById(id).classList.remove('hidden');
+                
+                const homeBtn = document.getElementById('btn-home');
+                if (id === 'view-menu') homeBtn.classList.add('hidden');
+                else homeBtn.classList.remove('hidden');
+            },
+
+            showMenu() { 
+                const best = localStorage.getItem('blitz_highscore') || '0';
+                document.getElementById('menu-highscore').innerText = best;
+                this.show('view-menu'); 
+            },
+            
+            showGame(mode) { 
+                this.show('view-game'); 
+                
+                // Configure UI based on mode
+                const timerCont = document.getElementById('timer-container');
+                const badge = document.getElementById('mode-badge');
+                const board = document.getElementById('game-board');
+
+                if (mode === 'arcade') {
+                    timerCont.classList.remove('hidden');
+                    badge.innerText = 'Arcade';
+                    badge.className = "px-3 py-1 bg-rose-100 rounded-full text-xs font-bold text-rose-600 uppercase tracking-wide";
+                    board.classList.remove('bg-emerald-50/30'); 
+                } else {
+                    timerCont.classList.add('hidden');
+                    badge.innerText = 'Training';
+                    badge.className = "px-3 py-1 bg-emerald-100 rounded-full text-xs font-bold text-emerald-600 uppercase tracking-wide";
+                    board.classList.add('bg-emerald-50/30'); // Slight tint for training
+                }
+            },
+
+            updateTimer(pct) {
+                const bar = document.getElementById('timer-bar');
+                bar.style.width = `${pct}%`;
+                // Change color based on urgency
+                if (pct < 30) bar.className = 'h-full w-full timer-bar bg-rose-600';
+                else if (pct < 60) bar.className = 'h-full w-full timer-bar bg-orange-500';
+                else bar.className = 'h-full w-full timer-bar bg-emerald-500';
+            },
+
+            showResults(score, reason, mode) {
+                const best = localStorage.getItem('blitz_highscore') || '0';
+                document.getElementById('res-score').innerText = score;
+                document.getElementById('res-highscore').innerText = mode === 'arcade' ? best : '-';
+                
+                document.getElementById('res-title').innerText = reason === "Time's Up!" ? "Time's Up!" : "Game Over";
+                document.getElementById('res-reason').innerText = reason;
+
+                // Adjust icon for Time's Up vs Wrong
+                const iconContainer = document.getElementById('res-icon');
+                if (reason === "Time's Up!") {
+                    iconContainer.innerHTML = '<i class="fas fa-hourglass-end"></i>';
+                } else {
+                    iconContainer.innerHTML = '<i class="fas fa-times"></i>';
+                }
+
+                this.show('view-results');
+            },
+
+            renderQuestion(text, level, score) {
+                const qEl = document.getElementById('question-text');
+                
+                qEl.style.opacity = '0';
+                qEl.style.transform = 'translateY(10px)';
+                
+                setTimeout(() => {
+                    qEl.innerHTML = text;
+                    document.getElementById('hud-level').innerText = level;
+                    document.getElementById('hud-score').innerText = score;
+                    
+                    qEl.style.opacity = '1';
+                    qEl.style.transform = 'translateY(0)';
+                }, 100);
+            },
+
+            flashFeedback(type) {
+                const flash = document.getElementById('feedback-flash');
+                const color = type === 'correct' ? 'bg-emerald-100' : 'bg-rose-100';
+                flash.className = `absolute inset-0 pointer-events-none z-0 opacity-100 transition-opacity duration-200 ${color}`;
+                setTimeout(() => {
+                    flash.classList.remove('opacity-100');
+                    flash.classList.add('opacity-0');
+                }, 150);
+            },
+
+            shakeBoard() {
+                const board = document.getElementById('game-board');
+                board.classList.remove('shake');
+                void board.offsetWidth;
+                board.classList.add('shake');
+            }
+        };
+
+        window.onload = () => UI.init();
+    </script>
+</body>
+</html>
