@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Memory Matrix</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+            user-select: none;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Animations */
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        .pop { animation: pop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.95); }
+            100% { transform: scale(1); }
+        }
+
+        /* Cell Styling */
+        .grid-cell {
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .grid-cell:active {
+            transform: scale(0.95);
+        }
+
+        /* Active States */
+        .cell-highlight {
+            background-color: #6366f1 !important; /* Indigo-500 */
+            border-color: #4f46e5 !important;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
+            transform: scale(1.05);
+        }
+        
+        .cell-correct {
+            background-color: #10b981 !important; /* Emerald-500 */
+            border-color: #059669 !important;
+        }
+
+        .cell-wrong {
+            background-color: #ef4444 !important; /* Rose-500 */
+            border-color: #dc2626 !important;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex items-center justify-center p-2 sm:p-4 bg-slate-50">
+
+    <!-- App Container -->
+    <div id="app-container" class="w-full max-w-4xl h-full max-h-[800px] bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col relative border border-slate-200">
+        
+        <!-- Header -->
+        <header class="bg-white p-4 flex justify-between items-center border-b border-slate-100 z-20 shadow-sm h-16 shrink-0">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600">
+                    <i class="fas fa-th"></i>
+                </div>
+                <h1 class="font-bold text-lg text-slate-700">Memory Matrix</h1>
+            </div>
+            <button id="btn-home" onclick="UI.showMenu()" class="hidden px-3 py-1 text-sm font-semibold text-slate-500 hover:bg-slate-50 rounded-lg transition-colors border border-transparent hover:border-slate-200">
+                Exit
+            </button>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 relative overflow-hidden bg-slate-50/50">
+            
+            <!-- MENU VIEW -->
+            <div id="view-menu" class="absolute inset-0 p-6 flex flex-col items-center justify-center overflow-y-auto">
+                <div class="text-center mb-8">
+                    <h2 class="text-4xl font-extrabold text-slate-800 mb-2">Pattern Recall</h2>
+                    <p class="text-slate-500 max-w-xs mx-auto">Memorize the sequence. Recreate it.</p>
+                </div>
+
+                <div class="w-full max-w-md space-y-4">
+                    <div class="text-sm font-bold text-slate-400 uppercase tracking-widest text-center mb-2">Select Grid Size</div>
+                    
+                    <button onclick="Game.start(3)" class="w-full flex items-center p-4 bg-white hover:bg-emerald-50 border-2 border-slate-200 hover:border-emerald-400 rounded-xl transition-all shadow-sm group">
+                        <div class="w-12 h-12 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl mr-4 group-hover:scale-110 transition-transform font-bold">
+                            3x3
+                        </div>
+                        <div class="text-left flex-1">
+                            <h3 class="font-bold text-lg text-slate-800">Standard</h3>
+                            <p class="text-xs text-slate-500">Good for warming up.</p>
+                        </div>
+                        <div class="text-right">
+                             <span class="text-xs font-bold text-slate-400">BEST</span>
+                             <div class="font-bold text-emerald-600" id="best-3">0</div>
+                        </div>
+                    </button>
+
+                    <button onclick="Game.start(4)" class="w-full flex items-center p-4 bg-white hover:bg-indigo-50 border-2 border-slate-200 hover:border-indigo-400 rounded-xl transition-all shadow-sm group">
+                        <div class="w-12 h-12 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl mr-4 group-hover:scale-110 transition-transform font-bold">
+                            4x4
+                        </div>
+                        <div class="text-left flex-1">
+                            <h3 class="font-bold text-lg text-slate-800">Expert</h3>
+                            <p class="text-xs text-slate-500">Balanced challenge.</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs font-bold text-slate-400">BEST</span>
+                            <div class="font-bold text-indigo-600" id="best-4">0</div>
+                       </div>
+                    </button>
+
+                    <button onclick="Game.start(5)" class="w-full flex items-center p-4 bg-white hover:bg-rose-50 border-2 border-slate-200 hover:border-rose-400 rounded-xl transition-all shadow-sm group">
+                        <div class="w-12 h-12 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center text-xl mr-4 group-hover:scale-110 transition-transform font-bold">
+                            5x5
+                        </div>
+                        <div class="text-left flex-1">
+                            <h3 class="font-bold text-lg text-slate-800">Master</h3>
+                            <p class="text-xs text-slate-500">Pure chaos.</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs font-bold text-slate-400">BEST</span>
+                            <div class="font-bold text-rose-600" id="best-5">0</div>
+                       </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- GAME VIEW -->
+            <div id="view-game" class="hidden absolute inset-0 flex flex-col">
+                <!-- HUD -->
+                <div class="h-14 flex justify-between items-center px-6 bg-white/80 border-b border-slate-100 shrink-0 backdrop-blur-sm z-10">
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">LEVEL</span>
+                        <span id="hud-level" class="text-slate-800 text-lg font-bold leading-none">1</span>
+                    </div>
+                    
+                    <!-- Status Indicator -->
+                    <div id="game-status" class="px-4 py-1.5 bg-indigo-100 rounded-full text-xs font-bold text-indigo-600 uppercase tracking-wide flex items-center gap-2 transition-colors">
+                        <i class="fas fa-eye"></i> <span>Watch</span>
+                    </div>
+
+                    <div class="flex flex-col text-right">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">SCORE</span>
+                        <span id="hud-score" class="text-indigo-600 text-xl font-black leading-none">0</span>
+                    </div>
+                </div>
+
+                <!-- Game Board Container -->
+                <div class="flex-1 flex flex-col items-center justify-center p-4">
+                    
+                    <!-- The Grid -->
+                    <div id="grid-container" class="grid gap-2 sm:gap-3 w-full max-w-[350px] aspect-square p-2 bg-white rounded-2xl shadow-sm border border-slate-100">
+                        <!-- Cells injected via JS -->
+                    </div>
+
+                    <!-- Hint Text -->
+                    <p id="game-hint" class="text-center text-slate-400 text-sm mt-8 font-semibold animate-pulse h-6">
+                        Watch the sequence...
+                    </p>
+                </div>
+            </div>
+
+            <!-- RESULTS VIEW -->
+            <div id="view-results" class="hidden absolute inset-0 bg-white p-6 flex flex-col items-center justify-center z-50">
+                <div class="w-20 h-20 bg-rose-100 rounded-full flex items-center justify-center mb-6 text-rose-500 text-4xl shadow-lg shadow-rose-100">
+                    <i class="fas fa-brain"></i>
+                </div>
+                
+                <h2 class="text-3xl font-black text-slate-800 mb-1">Memory Slip</h2>
+                <p class="text-slate-500 mb-8 font-medium">Sequence broken.</p>
+                
+                <div class="grid grid-cols-2 gap-4 w-full max-w-xs mb-8">
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Score</div>
+                        <div id="res-score" class="text-4xl font-black text-slate-800 mt-1">0</div>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Grid Best</div>
+                        <div id="res-highscore" class="text-4xl font-black text-indigo-600 mt-1">0</div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 w-full max-w-xs">
+                    <button onclick="UI.showMenu()" class="flex-1 py-4 border-2 border-slate-200 font-bold text-slate-600 rounded-xl hover:bg-slate-50 transition-colors">Menu</button>
+                    <button onclick="Game.restart()" class="flex-1 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95">Try Again</button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        const Game = {
+            gridSize: 3,
+            level: 1,
+            score: 0,
+            sequence: [],
+            playerIndex: 0,
+            isInputActive: false,
+            
+            // Config
+            baseTime: 600, // ms visible
+            gapTime: 150,  // ms between
+            
+            start(size) {
+                this.gridSize = size;
+                this.level = 1;
+                this.score = 0;
+                this.sequence = [];
+                
+                UI.setupGrid(size);
+                UI.showGame();
+                UI.updateHUD(this.level, this.score);
+                
+                // Slight delay before first round
+                setTimeout(() => this.startRound(), 800);
+            },
+
+            restart() {
+                this.start(this.gridSize);
+            },
+
+            startRound() {
+                this.isInputActive = false;
+                this.playerIndex = 0;
+                UI.setStatus('watch');
+                
+                // Add new step to sequence
+                const totalCells = this.gridSize * this.gridSize;
+                // Ensure we don't pick the exact same cell twice in a row to keep it visible?
+                // Actually in Simon games, repeating same cell is fine.
+                const nextStep = Math.floor(Math.random() * totalCells);
+                this.sequence.push(nextStep);
+
+                // Play sequence
+                this.playSequence();
+            },
+
+            async playSequence() {
+                // Calculate speed based on level
+                // Decrease time by 30ms per level, floor at 250ms
+                const speed = Math.max(250, this.baseTime - (this.level * 30));
+                const gap = Math.max(50, this.gapTime - (this.level * 5));
+
+                await new Promise(r => setTimeout(r, 500)); // Breath before starting
+
+                for (let i = 0; i < this.sequence.length; i++) {
+                    const cellIndex = this.sequence[i];
+                    UI.highlightCell(cellIndex, true);
+                    
+                    // Wait for visible time
+                    await new Promise(r => setTimeout(r, speed));
+                    
+                    UI.highlightCell(cellIndex, false);
+
+                    // Wait for gap time (unless last item)
+                    if (i < this.sequence.length - 1) {
+                        await new Promise(r => setTimeout(r, gap));
+                    }
+                }
+
+                this.isInputActive = true;
+                UI.setStatus('play');
+            },
+
+            handleInput(index) {
+                if (!this.isInputActive) return;
+
+                // Check correctness
+                if (index === this.sequence[this.playerIndex]) {
+                    // Correct tap
+                    UI.flashCellCorrect(index);
+                    this.playerIndex++;
+
+                    // Check if sequence complete
+                    if (this.playerIndex >= this.sequence.length) {
+                        this.isInputActive = false;
+                        this.score += (this.level * 10);
+                        this.level++;
+                        UI.updateHUD(this.level, this.score);
+                        setTimeout(() => this.startRound(), 1000);
+                    }
+                } else {
+                    // Wrong tap
+                    this.isInputActive = false;
+                    UI.flashCellWrong(index);
+                    UI.shakeGrid();
+                    setTimeout(() => this.gameOver(), 800);
+                }
+            },
+
+            gameOver() {
+                const key = `mm_best_${this.gridSize}`;
+                const currentBest = parseInt(localStorage.getItem(key) || '0');
+                if (this.score > currentBest) {
+                    localStorage.setItem(key, this.score);
+                }
+                UI.showResults(this.score, this.gridSize);
+            }
+        };
+
+        const UI = {
+            ids: ['view-menu', 'view-game', 'view-results'],
+
+            init() {
+                // Load best scores
+                ['3','4','5'].forEach(size => {
+                    const el = document.getElementById(`best-${size}`);
+                    if(el) el.innerText = localStorage.getItem(`mm_best_${size}`) || '0';
+                });
+                this.showMenu();
+            },
+
+            show(id) {
+                this.ids.forEach(x => document.getElementById(x).classList.add('hidden'));
+                document.getElementById(id).classList.remove('hidden');
+                
+                const homeBtn = document.getElementById('btn-home');
+                if (id === 'view-menu') {
+                    homeBtn.classList.add('hidden');
+                    // Refresh scores on menu return
+                    let mmatrix_high = 0;
+                    ['3','4','5'].forEach(size => {
+    const value = localStorage.getItem(`mm_best_${size}`) || '0';
+    document.getElementById(`best-${size}`).innerText = value;
+    mmatrix_high = Math.max(mmatrix_high, parseInt(value));
+});
+                } else {
+                    homeBtn.classList.remove('hidden');
+                }
+            },
+
+            showMenu() { this.show('view-menu'); },
+            showGame() { this.show('view-game'); },
+            
+            showResults(score, size) { 
+                document.getElementById('res-score').innerText = score;
+                document.getElementById('res-highscore').innerText = localStorage.getItem(`mm_best_${size}`) || '0';
+                this.show('view-results'); 
+            },
+
+            setupGrid(size) {
+                const container = document.getElementById('grid-container');
+                container.innerHTML = '';
+                
+                // Set grid cols
+                container.className = `grid gap-2 sm:gap-3 w-full max-w-[350px] aspect-square p-2 bg-white rounded-2xl shadow-sm border border-slate-100 grid-cols-${size}`;
+
+                for (let i = 0; i < size * size; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell w-full h-full bg-slate-100 rounded-xl cursor-pointer border-2 border-slate-200';
+                    cell.dataset.index = i;
+                    
+                    // Touch/Click handling
+                    // Use mousedown/touchstart to make it feel responsive
+                    const handleTap = (e) => {
+                        e.preventDefault(); // prevent double firing
+                        Game.handleInput(i);
+                    };
+                    
+                    cell.addEventListener('mousedown', handleTap);
+                    cell.addEventListener('touchstart', handleTap);
+                    
+                    container.appendChild(cell);
+                }
+            },
+
+            highlightCell(index, active) {
+                const cells = document.querySelectorAll('.grid-cell');
+                if(cells[index]) {
+                    if(active) cells[index].classList.add('cell-highlight');
+                    else cells[index].classList.remove('cell-highlight');
+                }
+            },
+
+            flashCellCorrect(index) {
+                const cells = document.querySelectorAll('.grid-cell');
+                if(cells[index]) {
+                    const cell = cells[index];
+                    cell.classList.add('cell-correct');
+                    cell.classList.add('pop');
+                    setTimeout(() => {
+                        cell.classList.remove('cell-correct');
+                        cell.classList.remove('pop');
+                    }, 200);
+                }
+            },
+
+            flashCellWrong(index) {
+                const cells = document.querySelectorAll('.grid-cell');
+                if(cells[index]) {
+                    const cell = cells[index];
+                    cell.classList.add('cell-wrong');
+                    // Keep red until game over transition
+                }
+            },
+
+            shakeGrid() {
+                const g = document.getElementById('grid-container');
+                g.classList.remove('shake');
+                void g.offsetWidth;
+                g.classList.add('shake');
+            },
+
+            setStatus(state) {
+                const el = document.getElementById('game-status');
+                const hint = document.getElementById('game-hint');
+                
+                if (state === 'watch') {
+                    el.className = "px-4 py-1.5 bg-indigo-100 rounded-full text-xs font-bold text-indigo-600 uppercase tracking-wide flex items-center gap-2 transition-colors";
+                    el.innerHTML = '<i class="fas fa-eye"></i> <span>Watch</span>';
+                    hint.innerText = "Watch the sequence...";
+                    hint.className = "text-center text-indigo-400 text-sm mt-8 font-bold animate-pulse h-6";
+                } else {
+                    el.className = "px-4 py-1.5 bg-emerald-100 rounded-full text-xs font-bold text-emerald-600 uppercase tracking-wide flex items-center gap-2 transition-colors";
+                    el.innerHTML = '<i class="fas fa-play"></i> <span>Your Turn</span>';
+                    hint.innerText = "Repeat the pattern";
+                    hint.className = "text-center text-emerald-500 text-sm mt-8 font-bold h-6";
+                }
+            },
+
+            updateHUD(level, score) {
+                document.getElementById('hud-level').innerText = level;
+                document.getElementById('hud-score').innerText = score;
+            }
+        };
+
+        window.onload = () => UI.init();
+    </script>
+</body>
+</html>
