@@ -91,9 +91,15 @@
             
             <!-- MENU VIEW -->
             <div id="view-menu" class="absolute inset-0 p-6 flex flex-col items-center justify-center overflow-y-auto">
-                <div class="text-center mb-8">
+                <div class="text-center mb-6">
                     <h2 class="text-4xl font-extrabold text-slate-800 mb-2">Pattern Recall</h2>
-                    <p class="text-slate-500 max-w-xs mx-auto">Memorize the sequence. Recreate it.</p>
+                    <p class="text-slate-500 max-w-xs mx-auto mb-4">Memorize the sequence. Recreate it.</p>
+                    
+                    <!-- Global High Score Badge -->
+                    <div class="inline-block px-4 py-1.5 bg-amber-50 rounded-full border border-amber-100 shadow-sm">
+                        <span class="text-xs font-bold text-amber-600 uppercase tracking-wider"><i class="fas fa-trophy mr-1"></i> All-Time Best</span>
+                        <span id="global-best-score" class="ml-1 font-black text-amber-600">0</span>
+                    </div>
                 </div>
 
                 <div class="w-full max-w-md space-y-4">
@@ -245,8 +251,6 @@
                 
                 // Add new step to sequence
                 const totalCells = this.gridSize * this.gridSize;
-                // Ensure we don't pick the exact same cell twice in a row to keep it visible?
-                // Actually in Simon games, repeating same cell is fine.
                 const nextStep = Math.floor(Math.random() * totalCells);
                 this.sequence.push(nextStep);
 
@@ -308,11 +312,20 @@
             },
 
             gameOver() {
+                // Save Per-Grid High Score
                 const key = `mm_best_${this.gridSize}`;
                 const currentBest = parseInt(localStorage.getItem(key) || '0');
                 if (this.score > currentBest) {
                     localStorage.setItem(key, this.score);
                 }
+
+                // Save Global High Score (Across all grids)
+                const globalKey = 'mmatrix_high';
+                const globalBest = parseInt(localStorage.getItem(globalKey) || '0');
+                if (this.score > globalBest) {
+                    localStorage.setItem(globalKey, this.score);
+                }
+
                 UI.showResults(this.score, this.gridSize);
             }
         };
@@ -326,6 +339,10 @@
                     const el = document.getElementById(`best-${size}`);
                     if(el) el.innerText = localStorage.getItem(`mm_best_${size}`) || '0';
                 });
+                // Load global best
+                const globalBest = localStorage.getItem('mmatrix_high') || '0';
+                document.getElementById('global-best-score').innerText = globalBest;
+
                 this.showMenu();
             },
 
@@ -337,12 +354,10 @@
                 if (id === 'view-menu') {
                     homeBtn.classList.add('hidden');
                     // Refresh scores on menu return
-                    let mmatrix_high = 0;
                     ['3','4','5'].forEach(size => {
-    const value = localStorage.getItem(`mm_best_${size}`) || '0';
-    document.getElementById(`best-${size}`).innerText = value;
-    mmatrix_high = Math.max(mmatrix_high, parseInt(value));
-});
+                        document.getElementById(`best-${size}`).innerText = localStorage.getItem(`mm_best_${size}`) || '0';
+                    });
+                    document.getElementById('global-best-score').innerText = localStorage.getItem('mmatrix_high') || '0';
                 } else {
                     homeBtn.classList.remove('hidden');
                 }
@@ -370,9 +385,8 @@
                     cell.dataset.index = i;
                     
                     // Touch/Click handling
-                    // Use mousedown/touchstart to make it feel responsive
                     const handleTap = (e) => {
-                        e.preventDefault(); // prevent double firing
+                        e.preventDefault();
                         Game.handleInput(i);
                     };
                     
@@ -409,7 +423,6 @@
                 if(cells[index]) {
                     const cell = cells[index];
                     cell.classList.add('cell-wrong');
-                    // Keep red until game over transition
                 }
             },
 
